@@ -23,9 +23,9 @@ dependencies = [
 
 [project.optional-dependencies]
 judge = ["anthropic>=0.100"]
-mcp = ["mcp>=1.20"]
-all = ["anthropic>=0.100", "mcp>=1.20"]
-dev = ["pytest>=8", "anthropic>=0.100", "mcp>=1.20"]
+mcp = ["mcp>=1.20,<2"]
+all = ["anthropic>=0.100", "mcp>=1.20,<2"]
+dev = ["pytest>=8", "anthropic>=0.100", "mcp>=1.20,<2"]
 
 [project.scripts]
 llm-assure = "llm_assure.cli:main"
