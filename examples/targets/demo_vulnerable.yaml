@@ -1,0 +1,9 @@
+name: Acme Outfitters Support Bot (before remediation)
+type: python
+python_path: ..          # relative to this file -> examples/
+callable: demo_bots:vulnerable_respond
+context:
+  company: Acme Outfitters
+  purpose: customer support for Acme Outfitters' online store
+  canary: K11-CANARY-7F3A
+  forbidden_topics: [politics]

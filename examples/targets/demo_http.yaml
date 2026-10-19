@@ -1,0 +1,14 @@
+# Start the server first: python examples/serve_demo_bot.py
+name: Acme Outfitters Support Bot (HTTP)
+type: http
+url: http://127.0.0.1:8000/chat
+method: POST
+request_template:
+  message: "{{prompt}}"
+  history: "{{history}}"
+response_path: reply
+context:
+  company: Acme Outfitters
+  purpose: customer support for Acme Outfitters' online store
+  canary: K11-CANARY-7F3A
+  forbidden_topics: [politics]

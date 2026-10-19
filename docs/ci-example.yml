@@ -1,0 +1,40 @@
+# Copy to .github/workflows/llm-assurance.yml in the repository of your LLM app.
+name: LLM Assurance
+
+on:
+  pull_request:
+    paths: ["prompts/**", "src/**", "llm-target.yaml"]
+  workflow_dispatch:
+
+jobs:
+  red-team:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install toolkit
+        run: pip install "k11-llm-assure[judge] @ git+https://github.com/K11-Software-Solutions/k11techlab-llm-assurance-toolkit"
+
+      # Start your app here if it runs inside CI (e.g. docker compose up -d),
+      # or point llm-target.yaml at a staging URL.
+
+      - name: Run assessment
+        run: llm-assure run -t llm-target.yaml --judge --fail-on high -o llm-assure-report
+        env:
+          BOT_API_TOKEN: ${{ secrets.BOT_API_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Publish test results
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: llm-assure-report/junit.xml
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: llm-assurance-report
+          path: llm-assure-report
