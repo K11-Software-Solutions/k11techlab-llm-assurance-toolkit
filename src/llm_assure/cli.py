@@ -102,6 +102,40 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_adaptive(args: argparse.Namespace) -> int:
+    from .adaptive import AdaptiveRunner, save_record
+
+    arm = "adaptive_cold" if args.cold else "adaptive_seeded"
+    out_dir = Path(args.out)
+    exit_code = 0
+    for i in range(1, args.runs + 1):
+        target = load_target(args.target)
+        try:
+            runner = AdaptiveRunner(
+                target, model=args.attacker_model, effort=args.attacker_effort,
+                budget=args.budget, arm=arm, static_suites=args.static_suite,
+            )
+            print(f"[{i}/{args.runs}] {arm} run against '{target.name}' (budget {args.budget})...",
+                  file=sys.stderr)
+            rec = runner.run()
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        finally:
+            target.close()
+        path = save_record(rec, out_dir)
+        u = rec.attacker_usage
+        print(f"  status {rec.status} | queries {rec.queries_static} static + {rec.queries_adaptive} adaptive"
+              f" | findings {len(rec.findings)} | attacker turns {rec.attacker_turns}"
+              f" | tokens in {u['input_tokens']} out {u['output_tokens']}"
+              f" cache-read {u['cache_read_input_tokens']} | {rec.duration_s}s")
+        if rec.error:
+            print(f"  error: {rec.error}")
+            exit_code = 1
+        print(f"  record -> {path}")
+    return exit_code
+
+
 def cmd_suites(args: argparse.Namespace) -> int:
     suites = load_suites(pack_dirs=args.pack or [])
     for s in suites:
@@ -151,6 +185,17 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--fail-on", choices=[*SEVERITY_ORDER, "none"], default="high",
                    help="exit 1 if any finding at or above this severity (default: high)")
     r.set_defaults(func=cmd_run)
+
+    a = sub.add_parser("adaptive", help="autonomous adaptive red-teaming with a Claude attacker agent")
+    a.add_argument("-t", "--target", required=True, help="target YAML file")
+    a.add_argument("--budget", type=int, default=100, help="max target queries per run, static included")
+    a.add_argument("--cold", action="store_true", help="cold-start arm: skip the static suite seeding")
+    a.add_argument("--static-suite", action="append", help="limit seeding to these suites (repeatable)")
+    a.add_argument("--runs", type=int, default=1, help="independent runs (the study uses 5)")
+    a.add_argument("--attacker-model", default="claude-opus-5-5")
+    a.add_argument("--attacker-effort", choices=["low", "medium", "high", "xhigh", "max"], default=None)
+    a.add_argument("-o", "--out", default="adaptive-runs", help="directory for JSON run records")
+    a.set_defaults(func=cmd_adaptive)
 
     s = sub.add_parser("suites", help="list available suites")
     s.add_argument("--pack", action="append")

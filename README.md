@@ -152,6 +152,28 @@ Claude Desktop (`claude_desktop_config.json`):
 Try asking Claude: *"Run a baseline assessment against examples/targets/demo_vulnerable.yaml,
 then use send_probe to find a prompt-injection variant the suite missed."*
 
+## Autonomous adaptive red-teaming
+
+`llm-assure adaptive` gives a Claude attacker agent a fixed query budget and lets it attack
+the target on its own. It reads each reply, adapts, runs multi-turn conversations and
+records every distinct vulnerability it finds. This is the harness for the K11
+adaptive-vs-static study.
+
+```bash
+export ANTHROPIC_API_KEY=...
+# Seeded arm: the static suite runs first (its queries count toward the budget),
+# then the agent hunts for what the suite missed
+llm-assure adaptive -t target.yaml --budget 100 --runs 5 -o runs/
+# Cold-start arm: the agent gets the full budget and no static results
+llm-assure adaptive -t target.yaml --budget 100 --runs 5 --cold -o runs/
+```
+
+Each run writes one JSON record to the output directory. It contains every conversation,
+each finding with a snapshot of its transcript, the static results (seeded arm), the query
+count, attacker token usage including cache reads, timings, and a final status (`finished`,
+`budget_exhausted`, `refused`, `stalled`, `max_turns` or `error`). The attacker never sees
+the target's canary value; it is only told whether a reply leaked it.
+
 ## Writing probes and packs
 
 ```yaml

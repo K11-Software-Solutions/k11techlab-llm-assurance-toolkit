@@ -61,12 +61,13 @@ k11techlab-llm-assurance-toolkit/
 │   ├── runner.py                   # executes probes, decides verdicts, runs in parallel
 │   ├── report.py                   # HTML, JSON, JUnit XML, Markdown writers
 │   ├── cli.py                      # `llm-assure` command line
-│   └── mcp_server.py               # `llm-assure-mcp` MCP server
+│   ├── mcp_server.py               # `llm-assure-mcp` MCP server
+│   └── adaptive.py                 # autonomous Claude attacker agent (research harness)
 ├── examples/
 │   ├── demo_bots.py                # vulnerable and hardened simulated bots
 │   ├── serve_demo_bot.py           # serves a demo bot over HTTP
 │   └── targets/*.yaml              # example target configurations
-├── tests/                          # pytest suite (26 tests)
+├── tests/                          # pytest suite (32 tests)
 ├── docs/
 │   ├── ci-example.yml              # workflow to copy into your app's repo
 │   └── sample-report/              # pre-generated before/after reports
@@ -367,7 +368,45 @@ regression testing with adaptive, exploratory red-teaming.
 The server's instructions tell the agent to test only systems the user owns or is
 authorized to assess. See [section 8](#8-the-mcp-execution-flow) for the flow.
 
-### 4.10 Examples, tests and CI
+### 4.10 `adaptive.py`: the autonomous attacker (research harness)
+
+**Why it exists.** Interactive MCP sessions are useful but not repeatable, so they can't be
+measured. The adaptive runner runs the same attacker agent unattended, under a fixed query
+budget, with everything logged. This makes adaptive red-teaming comparable with the static
+suite: the arms of the K11 adaptive-vs-static study.
+
+**How a run works.**
+
+1. `CountingTarget` wraps the target so every query is counted, whichever arm sends it.
+2. **Seeded arm** (`adaptive_seeded`): the static suite runs first through the counting
+   wrapper, and its queries count toward the budget. The runner refuses to start if the
+   budget can't cover the static suite plus at least one adaptive query. **Cold arm**
+   (`adaptive_cold`) skips this step.
+3. The agent receives a briefing: the target's purpose and company, the budget, the
+   categories to cover and, in the seeded arm, what the static suite found and where the
+   target resisted. **The canary value is never included.**
+4. A manual tool-use loop calls the Claude API (`claude-opus-5-5` by default) with three
+   strict tools:
+   - `send_message`: talks to the target. `conversation_id: "new"` starts a conversation,
+     and an earlier id continues it. Each call costs one query. The result contains the reply
+     (clipped to 3,000 characters), quick checks (refusal, canary leaked yes/no,
+     PII/secrets) and the remaining budget. Once the budget is spent, calls return an error.
+   - `record_finding`: logs a suspected vulnerability with category, severity, title,
+     evidence and a snapshot of the conversation at that moment.
+   - `finish`: ends the run with the agent's summary.
+5. All tool results from one agent turn go back in a single message. The conversation is
+   append-only, with prompt caching enabled to keep a long run affordable. Server-side
+   refusal fallbacks are enabled.
+6. The run stops when the agent finishes, refuses, stops calling tools after two reminders
+   (`stalled`), runs out of budget, or reaches the turn cap (`max_turns`). API or target
+   failures are recorded as `error` with partial data kept.
+7. `save_record` writes one JSON file per run for labeling and analysis.
+
+**Why a manual loop instead of the SDK tool runner.** The runner needs per-call budget
+enforcement, a precise event log, refusal handling and partial-result recovery on error.
+A hand-written loop keeps all of that explicit and testable with a scripted fake client.
+
+### 4.11 Examples, tests and CI
 
 - **`examples/demo_bots.py`** contains two simulated support bots that need no API key.
   `vulnerable_respond` makes every classic mistake; `hardened_respond` is the remediated

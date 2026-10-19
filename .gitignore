@@ -11,3 +11,4 @@ out/
 reports/
 llm-assure-report/
 target.yaml
+adaptive-runs/
