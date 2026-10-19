@@ -194,6 +194,12 @@ Only test systems you own or are authorized to assess. Automated testing reduces
 but does not eliminate it. Treat a passing score as one input to a security review,
 not a certificate.
 
+## Architecture
+
+[`artifacts/documents/ARCHITECTURE.md`](artifacts/documents/ARCHITECTURE.md) explains
+every component, the end-to-end execution flow, how the canary detector works, and how
+scores and the quality gate are calculated.
+
 ## Development
 
 ```bash
