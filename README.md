@@ -229,6 +229,8 @@ not a certificate.
 [`artifacts/documents/ARCHITECTURE.md`](artifacts/documents/ARCHITECTURE.md) explains
 every component, the end-to-end execution flow, how the canary detector works, and how
 scores and the quality gate are calculated.
+[`artifacts/documents/STUDY_DESIGN.md`](artifacts/documents/STUDY_DESIGN.md) describes the
+adaptive-vs-static red-teaming study this toolkit supports.
 
 ## Development
 

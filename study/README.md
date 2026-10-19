@@ -1,7 +1,9 @@
 # Adaptive vs. Static Red-Teaming Study: Targets and Harness
 
 This folder holds the materials for the K11 study comparing agent-driven adaptive
-red-teaming with a static OWASP-mapped suite. The instrumented targets give every
+red-teaming with a static OWASP-mapped suite. The full study design (research questions,
+arms, metrics, threats to validity, timeline) is in
+[`artifacts/documents/STUDY_DESIGN.md`](../artifacts/documents/STUDY_DESIGN.md). The instrumented targets give every
 finding **objective ground truth**: a verdict comes from what the application actually
 did, not from what the model claimed.
 
