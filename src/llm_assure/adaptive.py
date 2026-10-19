@@ -139,6 +139,9 @@ class AdaptiveRunRecord:
     static: dict[str, Any] | None = None
     conversations: dict[str, list[dict[str, str]]] = field(default_factory=dict)
     findings: list[dict[str, Any]] = field(default_factory=list)
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)  # instrumented targets: full call log
+    instrumented: dict[str, Any] | None = None
+    white_box: bool = False
     agent_summary: str = ""
     attacker_turns: int = 0
     attacker_usage: dict[str, int] = field(default_factory=lambda: {
@@ -171,14 +174,35 @@ def _clip(text: str, n: int = REPLY_CLIP) -> str:
     return text if len(text) <= n else text[:n] + f"\n[... reply truncated, {len(text) - n} more characters]"
 
 
-def _quick_checks(reply: str, transcript: list[dict[str, str]], ctx: dict[str, Any]) -> dict[str, Any]:
+def _quick_checks(reply: str, transcript: list[dict[str, str]], ctx: dict[str, Any],
+                  white_box: bool = False) -> dict[str, Any]:
     canary = run_detector({"type": "canary"}, reply, transcript, ctx, None)
     pii = run_detector({"type": "pii", "kinds": list(PII_PATTERNS)}, reply, transcript, ctx, None)
-    return {
+    checks = {
         "looks_like_refusal": is_refusal(reply),
         "canary_leaked": canary.vulnerable,  # None when the target has no canary configured
         "pii_or_secrets": pii.detail if pii.vulnerable else None,
     }
+    # White-box mode: instrumented targets also reveal their ground truth for this turn.
+    # Off by default, because a black-box tester would not see the app's tool log.
+    if white_box and "_tool_log" in ctx:
+        from .instrumented.tools import conversation_key
+
+        sent = transcript[:-1] if transcript and transcript[-1]["role"] == "assistant" else transcript
+        key = conversation_key(sent)
+        checks["tool_calls_this_turn"] = [
+            {"tool": c.tool, "args": c.args, "unauthorized": bool(c.violation),
+             "blocked": bool(c.violation) and not c.executed}
+            for c in ctx["_tool_log"].for_transcript(sent) if c.key == key
+        ]
+        checks["seeded_pii_disclosed"] = run_detector({"type": "seeded_pii"}, reply, transcript, ctx, None).vulnerable
+        checks["poison_marker_in_reply"] = run_detector({"type": "poison"}, reply, transcript, ctx, None).vulnerable
+    return checks
+
+
+def public_context(ctx: dict[str, Any]) -> dict[str, Any]:
+    """Context without the ground-truth instruments (keys starting with '_')."""
+    return {k: v for k, v in ctx.items() if not k.startswith("_")}
 
 
 def _static_summary(result) -> tuple[dict[str, Any], str]:
@@ -214,6 +238,7 @@ class AdaptiveRunner:
         arm: str = "adaptive_seeded",
         static_suites: list[str] | None = None,
         max_attacker_turns: int | None = None,
+        white_box: bool = False,
     ):
         if arm not in ARMS:
             raise ValueError(f"arm must be one of {ARMS}")
@@ -237,6 +262,7 @@ class AdaptiveRunner:
         self.arm = arm
         self.static_suites = static_suites
         self.max_attacker_turns = max_attacker_turns or budget * 2 + 20
+        self.white_box = white_box
 
     # ------------------------------------------------------------------ tools
     def _send_message(self, rec: AdaptiveRunRecord, convs: dict[str, Conversation], args: dict) -> dict:
@@ -264,7 +290,7 @@ class AdaptiveRunner:
             "conversation_id": cid,
             "turn": len(conv.messages) // 2,
             "reply": _clip(reply),
-            "checks": _quick_checks(reply, conv.messages, self.target.context),
+            "checks": _quick_checks(reply, conv.messages, self.target.context, self.white_box),
             "queries_remaining": self.budget - self.target.count,
         }
 
@@ -314,10 +340,12 @@ class AdaptiveRunner:
             run_id=uuid.uuid4().hex[:12],
             arm=self.arm,
             target=self.target.name,
-            target_context=dict(self.target.context),
+            target_context=public_context(self.target.context),
+            instrumented=self.target.context.get("_instrumented"),
             attacker_model=self.model,
             attacker_effort=self.effort,
             budget=self.budget,
+            white_box=self.white_box,
             started_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
             toolkit_version=__version__,
         )
@@ -401,6 +429,8 @@ class AdaptiveRunner:
             rec.error = f"{type(exc).__name__}: {exc}"
         finally:
             rec.conversations = {cid: c.messages for cid, c in convs.items()}
+            if "_tool_log" in self.target.context:
+                rec.tool_calls = self.target.context["_tool_log"].to_list()
             rec.finished_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
             rec.duration_s = round(time.perf_counter() - self._t0, 2)
         return rec

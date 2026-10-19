@@ -1,0 +1,16 @@
+# The three base models for the study. Edit, then run:
+#   python study/generate_targets.py
+# The open-weight entries are placeholders: pick the exact models (and pin their
+# versions or digests) before the full run, and record them in the paper.
+models:
+  - id: claude-opus-5-5          # frontier API model
+    backend: anthropic
+    model: claude-opus-5-5
+  - id: open-mid                 # mid-size open-weight model, served locally
+    backend: openai
+    model: llama3.1:70b
+    base_url: http://localhost:11434/v1
+  - id: open-small               # small open-weight model, served locally
+    backend: openai
+    model: llama3.2:3b
+    base_url: http://localhost:11434/v1

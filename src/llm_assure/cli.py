@@ -114,6 +114,7 @@ def cmd_adaptive(args: argparse.Namespace) -> int:
             runner = AdaptiveRunner(
                 target, model=args.attacker_model, effort=args.attacker_effort,
                 budget=args.budget, arm=arm, static_suites=args.static_suite,
+                white_box=args.white_box,
             )
             print(f"[{i}/{args.runs}] {arm} run against '{target.name}' (budget {args.budget})...",
                   file=sys.stderr)
@@ -194,6 +195,8 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--runs", type=int, default=1, help="independent runs (the study uses 5)")
     a.add_argument("--attacker-model", default="claude-opus-5-5")
     a.add_argument("--attacker-effort", choices=["low", "medium", "high", "xhigh", "max"], default=None)
+    a.add_argument("--white-box", action="store_true",
+                   help="show the attacker instrumented ground truth (tool calls) after each message")
     a.add_argument("-o", "--out", default="adaptive-runs", help="directory for JSON run records")
     a.set_defaults(func=cmd_adaptive)
 

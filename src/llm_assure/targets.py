@@ -204,9 +204,12 @@ TARGET_TYPES = {
 
 def target_from_dict(config: dict[str, Any], base_dir: Path | None = None) -> Target:
     ttype = config.get("type", "http")
+    if ttype == "instrumented":  # study targets; imported lazily to keep the core light
+        from .instrumented import InstrumentedTarget
+        return InstrumentedTarget(config, base_dir=base_dir)
     cls = TARGET_TYPES.get(ttype)
     if cls is None:
-        raise ValueError(f"Unknown target type '{ttype}'. Use one of: {', '.join(TARGET_TYPES)}")
+        raise ValueError(f"Unknown target type '{ttype}'. Use one of: {', '.join(TARGET_TYPES)}, instrumented")
     if cls is PythonTarget:
         return PythonTarget(config, base_dir=base_dir)
     return cls(config)

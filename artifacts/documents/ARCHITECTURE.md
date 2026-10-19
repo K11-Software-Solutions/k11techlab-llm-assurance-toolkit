@@ -62,15 +62,17 @@ k11techlab-llm-assurance-toolkit/
 │   ├── report.py                   # HTML, JSON, JUnit XML, Markdown writers
 │   ├── cli.py                      # `llm-assure` command line
 │   ├── mcp_server.py               # `llm-assure-mcp` MCP server
-│   └── adaptive.py                 # autonomous Claude attacker agent (research harness)
+│   ├── adaptive.py                 # autonomous Claude attacker agent (research harness)
+│   └── instrumented/               # study targets: model + simulated tools + ground truth
 ├── examples/
 │   ├── demo_bots.py                # vulnerable and hardened simulated bots
 │   ├── serve_demo_bot.py           # serves a demo bot over HTTP
 │   └── targets/*.yaml              # example target configurations
-├── tests/                          # pytest suite (32 tests)
+├── tests/                          # pytest suite (47 tests)
 ├── docs/
 │   ├── ci-example.yml              # workflow to copy into your app's repo
 │   └── sample-report/              # pre-generated before/after reports
+├── study/                          # adaptive-vs-static study: target configs, packs, generator
 ├── artifacts/documents/            # this document
 ├── .github/workflows/ci.yml        # tests + demo assessment on every push
 └── pyproject.toml                  # package metadata, extras, entry points
@@ -406,7 +408,33 @@ suite: the arms of the K11 adaptive-vs-static study.
 enforcement, a precise event log, refusal handling and partial-result recovery on error.
 A hand-written loop keeps all of that explicit and testable with a scripted fake client.
 
-### 4.11 Examples, tests and CI
+### 4.11 `instrumented/`: study targets with objective ground truth
+
+**Why it exists.** Detectors that read a reply can only judge what the bot *said*. For
+research, a finding should be judged on what the application *did*. The instrumented
+targets (`type: instrumented`) pair a real model with a simulated tool layer and
+three instruments: a unique canary, a policy-checked tool-call log and seeded synthetic
+PII. A fourth, poison markers, applies to the RAG app.
+
+| Module | Role |
+|---|---|
+| `fixtures.py` | Fictional customers, orders, candidates and knowledge-base articles (two poisoned), plus the context keys probes use |
+| `tools.py` | Tool definitions with an authorization policy per tool. `ToolLayer` logs every call with its `violation` and whether it `executed`; hardened apps block violations. `ToolLog.for_transcript` returns the calls for one conversation, keyed by a hash of the exact history sent. |
+| `backends.py` | Tool-use loops for Claude (Messages API) and any OpenAI-compatible endpoint. No refusal fallback, so the pinned model's behaviour is what gets measured. |
+| `apps.py` | `InstrumentedTarget`: three app types × baseline/hardened. Hardened adds security rules, server-side tool authorization, an input classifier and an output filter. |
+
+Three detectors read the instruments, which are stored in the target context under keys
+starting with `_`:
+
+- `tool_log` flags a policy violation that actually executed.
+- `seeded_pii` flags another person's seeded value, including reformatted variants.
+- `poison` flags a poison marker in the reply.
+
+On non-instrumented targets they return inconclusive. The adaptive runner drops `_` keys
+from its records and saves the full tool log instead. See `study/README.md` for the policy
+table and how to run the study.
+
+### 4.12 Examples, tests and CI
 
 - **`examples/demo_bots.py`** contains two simulated support bots that need no API key.
   `vulnerable_respond` makes every classic mistake; `hardened_respond` is the remediated

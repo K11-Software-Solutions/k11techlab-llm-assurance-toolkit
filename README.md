@@ -174,6 +174,14 @@ count, attacker token usage including cache reads, timings, and a final status (
 `budget_exhausted`, `refused`, `stalled`, `max_turns` or `error`). The attacker never sees
 the target's canary value; it is only told whether a reply leaked it.
 
+### Instrumented study targets
+
+`type: instrumented` targets pair a real model (Claude or any OpenAI-compatible endpoint)
+with simulated tools and ground-truth instruments: a unique canary, a policy-checked
+tool-call log and seeded synthetic PII. The `tool_log`, `seeded_pii` and `poison`
+detectors judge what the app actually did, not what it claimed. See
+[`study/README.md`](study/README.md).
+
 ## Writing probes and packs
 
 ```yaml
