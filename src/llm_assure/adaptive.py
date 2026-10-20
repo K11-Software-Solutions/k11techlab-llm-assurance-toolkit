@@ -239,11 +239,13 @@ class AdaptiveRunner:
         static_suites: list[str] | None = None,
         max_attacker_turns: int | None = None,
         white_box: bool = False,
+        pack_dirs: list[str] | None = None,
     ):
         if arm not in ARMS:
             raise ValueError(f"arm must be one of {ARMS}")
         if arm == "adaptive_seeded":
-            static_queries = sum(len(p.turns) for s in load_suites(static_suites) for p in s.probes)
+            static_queries = sum(len(p.turns) for s in load_suites(static_suites, pack_dirs=pack_dirs or [])
+                                 for p in s.probes)
             if static_queries >= budget:
                 raise ValueError(
                     f"budget {budget} leaves no adaptive queries after the static suite "
@@ -261,6 +263,7 @@ class AdaptiveRunner:
         self.budget = budget
         self.arm = arm
         self.static_suites = static_suites
+        self.pack_dirs = list(pack_dirs or [])
         self.max_attacker_turns = max_attacker_turns or budget * 2 + 20
         self.white_box = white_box
 
@@ -362,7 +365,7 @@ class AdaptiveRunner:
 
         try:
             if self.arm == "adaptive_seeded":
-                suites = load_suites(self.static_suites)
+                suites = load_suites(self.static_suites, pack_dirs=self.pack_dirs)
                 static = run_assessment(self.target, suites, concurrency=1)
                 rec.queries_static = self.target.count
                 rec.static, text = _static_summary(static)

@@ -127,15 +127,26 @@ def test_study_pack_runs_against_instrumented_target():
             return [("get_customer", {"customer_id": "C-1002"})], lambda r: f"Phone {r[0]['phone']}"
         return [], "I can't help with that."
     t = target("support", "baseline", plan)
-    suites = load_suites(["instrumented_support"], pack_dirs=[PACKS], include_builtin=False)
+    suites = load_suites(["instrumented_support"], pack_dirs=[PACKS / "support"], include_builtin=False)
     result = run_assessment(t, suites, concurrency=2)
     status = {r.probe_id: r.status for r in result.results}
     assert status["INS-S-001"] == "fail" and status["INS-S-003"] == "fail"
     assert status["INS-S-002"] == "pass"
 
 
+def test_seeded_arm_charges_pack_queries_to_budget():
+    builtin = sum(len(p.turns) for s in load_suites() for p in s.probes)
+    pack = sum(len(p.turns) for s in load_suites(pack_dirs=[PACKS / "support"], include_builtin=False)
+               for p in s.probes)
+    assert pack == 6
+    t = target("support", "baseline", lambda text: ([], "ok"))
+    with pytest.raises(ValueError):
+        AdaptiveRunner(t, client=object(), budget=builtin + pack, pack_dirs=[PACKS / "support"])
+    AdaptiveRunner(t, client=object(), budget=builtin + pack + 1, pack_dirs=[PACKS / "support"])
+
+
 def test_all_study_packs_load():
-    suites = load_suites(pack_dirs=[PACKS], include_builtin=False)
+    suites = load_suites(pack_dirs=[PACKS / "support", PACKS / "rag", PACKS / "hr"], include_builtin=False)
     assert {s.id for s in suites} == {"instrumented_support", "instrumented_rag", "instrumented_hr"}
 
 

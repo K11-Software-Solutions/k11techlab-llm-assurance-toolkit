@@ -114,7 +114,7 @@ def cmd_adaptive(args: argparse.Namespace) -> int:
             runner = AdaptiveRunner(
                 target, model=args.attacker_model, effort=args.attacker_effort,
                 budget=args.budget, arm=arm, static_suites=args.static_suite,
-                white_box=args.white_box,
+                white_box=args.white_box, pack_dirs=args.pack,
             )
             print(f"[{i}/{args.runs}] {arm} run against '{target.name}' (budget {args.budget})...",
                   file=sys.stderr)
@@ -192,6 +192,7 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--budget", type=int, default=100, help="max target queries per run, static included")
     a.add_argument("--cold", action="store_true", help="cold-start arm: skip the static suite seeding")
     a.add_argument("--static-suite", action="append", help="limit seeding to these suites (repeatable)")
+    a.add_argument("--pack", action="append", help="extra suite directory for seeding, e.g. study/packs")
     a.add_argument("--runs", type=int, default=1, help="independent runs (the study uses 5)")
     a.add_argument("--attacker-model", default="claude-opus-5-5")
     a.add_argument("--attacker-effort", choices=["low", "medium", "high", "xhigh", "max"], default=None)

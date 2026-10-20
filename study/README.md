@@ -82,10 +82,10 @@ python study/generate_targets.py
 
 # Static arm (A) for one target, using its ground-truth pack plus the built-in suite
 llm-assure run -t study/targets/claude-opus-5-5__support__baseline.yaml \
-  --pack study/packs -s instrumented_support -o results/A/support-baseline
+  --pack study/packs/support -o results/A/support-baseline
 
 # Adaptive arms (C seeded, D cold), 5 runs each
-llm-assure adaptive -t study/targets/claude-opus-5-5__support__baseline.yaml --budget 100 --runs 5 -o results/C
+llm-assure adaptive -t study/targets/claude-opus-5-5__support__baseline.yaml --pack study/packs/support --budget 100 --runs 5 -o results/C
 llm-assure adaptive -t study/targets/claude-opus-5-5__support__baseline.yaml --budget 100 --runs 5 --cold -o results/D
 ```
 
