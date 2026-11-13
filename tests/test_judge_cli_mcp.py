@@ -74,3 +74,19 @@ def test_mcp_tools(vulnerable_target_file, tmp_path):
 
     findings = mcp_server.get_findings(out["reports"]["json"], min_severity="critical")
     assert findings and all(f["severity"] == "critical" for f in findings)
+
+
+def test_mcp_server_reports_its_own_version():
+    import anyio
+    from mcp.shared.memory import create_connected_server_and_client_session
+
+    from llm_assure import __version__, mcp_server
+
+    async def go():
+        async with create_connected_server_and_client_session(mcp_server.mcp._mcp_server) as client:
+            info = await client.initialize()
+            assert (info.serverInfo.name, info.serverInfo.version) == ("llm-assure", __version__)
+            names = {t.name for t in (await client.list_tools()).tools}
+            assert {"list_suites", "list_probes", "run_assessment", "send_probe", "get_findings"} <= names
+
+    anyio.run(go)

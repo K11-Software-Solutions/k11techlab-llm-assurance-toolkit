@@ -16,6 +16,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from . import __version__
 from .detectors import PII_PATTERNS, is_refusal, run_detector
 from .models import SEVERITY_ORDER
 from .report import write_reports
@@ -170,6 +171,11 @@ def get_findings(report_json: str, min_severity: str = "low") -> list[dict[str, 
         for r in data["results"]
         if r["status"] == "fail" and SEVERITY_ORDER.index(r["severity"]) <= limit
     ]
+
+
+# FastMCP (mcp 1.x) has no version argument and would report the SDK's version
+# to clients; report this package's version instead.
+mcp._mcp_server.version = __version__
 
 
 def main() -> None:

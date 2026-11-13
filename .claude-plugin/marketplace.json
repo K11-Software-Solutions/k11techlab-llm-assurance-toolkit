@@ -1,0 +1,14 @@
+{
+  "name": "k11-llm-assure",
+  "owner": {
+    "name": "K11 Software Solutions",
+    "url": "https://k11softwaresolutions.com"
+  },
+  "plugins": [
+    {
+      "name": "llm-assure",
+      "source": "./",
+      "description": "Red-team LLM applications with OWASP-mapped probes and adaptive attacks, and produce audit-ready reports."
+    }
+  ]
+}

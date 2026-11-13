@@ -1,0 +1,31 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.K11-Software-Solutions/llm-assure",
+  "title": "LLM Assure",
+  "description": "Red-team LLM apps: 41 OWASP LLM Top 10 probes, adaptive attacks, CI gate, audit reports.",
+  "websiteUrl": "https://github.com/K11-Software-Solutions/k11techlab-llm-assurance-toolkit",
+  "repository": {
+    "url": "https://github.com/K11-Software-Solutions/k11techlab-llm-assurance-toolkit",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "k11-llm-assure-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "description": "Optional: enables the Claude LLM judge and adaptive red-teaming",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

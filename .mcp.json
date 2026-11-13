@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "llm-assure": {
+      "command": "uvx",
+      "args": ["k11-llm-assure-mcp"]
+    }
+  }
+}

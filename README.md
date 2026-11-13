@@ -1,5 +1,7 @@
 # K11 LLM Assurance Toolkit
 
+<!-- mcp-name: io.github.K11-Software-Solutions/llm-assure -->
+
 **Red-team your LLM application before your users do.**
 
 `llm-assure` runs automated attack and evaluation suites against any chatbot, RAG
@@ -114,7 +116,7 @@ judge-only probes are marked **needs review** rather than silently passed.
 
 ```yaml
 # .github/workflows/llm-assurance.yml
-- run: pip install "k11-llm-assure[judge] @ git+https://github.com/K11-Software-Solutions/k11techlab-llm-assurance-toolkit"
+- run: pip install "k11-llm-assure-mcp[judge]"
 - run: llm-assure run -t llm-target.yaml --fail-on high -o llm-assure-report
   env:
     BOT_API_TOKEN: ${{ secrets.BOT_API_TOKEN }}
@@ -131,16 +133,28 @@ A complete workflow is in [`docs/ci-example.yml`](docs/ci-example.yml).
 
 ## MCP server: red-teaming with Claude
 
+Listed in the official [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.K11-Software-Solutions/llm-assure`.
+
+**Claude Code plugin** (adds the tools plus `/red-team` and `/assurance-report`; needs [uv](https://docs.astral.sh/uv/)):
+
+```text
+/plugin marketplace add K11-Software-Solutions/k11techlab-llm-assurance-toolkit
+/plugin install llm-assure@k11-llm-assure
+```
+
+**MCP server only:**
+
 ```bash
-pip install -e ".[mcp]"
-claude mcp add llm-assure -- llm-assure-mcp
+claude mcp add llm-assure -- uvx k11-llm-assure-mcp
 ```
 
 Claude Desktop (`claude_desktop_config.json`):
 
 ```json
-{ "mcpServers": { "llm-assure": { "command": "llm-assure-mcp" } } }
+{ "mcpServers": { "llm-assure": { "command": "uvx", "args": ["k11-llm-assure-mcp"] } } }
 ```
+
+Or `pip install k11-llm-assure-mcp` and use the `llm-assure-mcp` command. From a clone: `pip install -e ".[mcp]"`.
 
 | Tool | What it does |
 |---|---|

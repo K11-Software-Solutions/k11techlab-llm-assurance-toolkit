@@ -1,0 +1,13 @@
+{
+  "name": "llm-assure",
+  "version": "0.1.0",
+  "description": "Red-team your LLM app from Claude Code: 41 OWASP LLM Top 10 probes, adaptive multi-turn attacks, a CI gate and audit-ready reports.",
+  "author": {
+    "name": "Kavita A. Jadhav",
+    "url": "https://k11softwaresolutions.com"
+  },
+  "homepage": "https://github.com/K11-Software-Solutions/k11techlab-llm-assurance-toolkit",
+  "repository": "https://github.com/K11-Software-Solutions/k11techlab-llm-assurance-toolkit",
+  "license": "MIT",
+  "keywords": ["llm", "red-teaming", "ai-security", "owasp", "prompt-injection", "assurance", "mcp"]
+}
